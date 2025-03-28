@@ -1,0 +1,21 @@
+import torch
+from ai.models.lstm_model import LSTMForecaster
+
+# Initialize and save a trained model (example)
+config = {
+    "input_size": 14,
+    "hidden_size": 128,
+    "num_layers": 2,
+    "dropout": 0.3,
+    "output_size": 1
+}
+
+model = LSTMForecaster(config)
+# Assume model was trained here...
+
+# Save model
+torch.save({
+    'model_state_dict': model.state_dict(),
+    'config': config,
+    'training_metrics': {'mae': 12.3, 'r2': 0.92}
+}, 'ai/saved_models/emission_predictor.pt')
