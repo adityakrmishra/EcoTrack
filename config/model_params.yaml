@@ -1,0 +1,103 @@
+# Base Model Architecture
+architecture:
+  name: "EmissionLSTM"
+  input_features: 15
+  hidden_layers: [128, 64, 32]
+  output_nodes: 1
+  activation: "LeakyReLU"
+  dropout: 0.3
+  bidirectional: True
+  attention: True
+  batch_norm: True
+
+# Training Configuration
+training:
+  epochs: 200
+  batch_size: 
+    dev: 32
+    staging: 64
+    prod: 128
+  learning_rate: 1e-3
+  validation_split: 0.2
+  early_stopping:
+    patience: 15
+    min_delta: 0.001
+  checkpoint:
+    interval: 5
+    path: "/models/checkpoints"
+  metrics: ["mae", "mse", "r2"]
+
+# Optimizer Settings
+optimizer:
+  type: "AdamW"
+  weight_decay: 0.01
+  momentum: 0.9
+  scheduler:
+    type: "ReduceLROnPlateau"
+    factor: 0.5
+    patience: 5
+    min_lr: 1e-6
+
+# Data Configuration
+data:
+  window_size: 168  # 1 week of hourly data
+  normalization: "robust"
+  test_split: 0.15
+  features:
+    static: ["facility_type", "region"]
+    dynamic: ["energy_usage", "water_flow", "temperature"]
+  augmentation:
+    noise: 0.02
+    scale: 0.1
+    shift: 0.05
+    window_warp: 0.1
+
+# Environment-specific Overrides
+environments:
+  dev:
+    training:
+      epochs: 20
+      batch_size: 16
+    debug: True
+
+  staging:
+    training:
+      batch_size: 32
+    data:
+      test_split: 0.1
+
+  prod:
+    training:
+      checkpoint:
+        interval: 10
+    optimizer:
+      learning_rate: 5e-4
+
+# Feature Engineering
+feature_engineering:
+  lag_features:
+    energy_usage: [1, 2, 3, 24, 168]
+    temperature: [1, 2, 3]
+  rolling_windows:
+    mean: [6, 24, 168]
+    std: [24, 168]
+  fourier_features:
+    order: 3
+    periods: [24, 168]
+
+# Hyperparameter Search Space (for Optuna)
+hyperparameter_search:
+  n_trials: 100
+  params:
+    hidden_layers:
+      - [64, 32]
+      - [128, 64, 32]
+    dropout:
+      low: 0.1
+      high: 0.5
+    learning_rate:
+      log: True
+      low: 1e-4
+      high: 1e-2
+    batch_size:
+      choices: [32, 64, 128]
